@@ -30,7 +30,8 @@ from followyourpose.util import save_videos_grid, ddim_inversion
 from einops import rearrange
 
 import sys
-sys.path.append('FollowYourPose')
+
+sys.path.append("FollowYourPose")
 
 # Will error if the minimal version of diffusers is not installed. Remove at your own risks.
 check_min_version("0.10.0.dev0")
@@ -84,14 +85,22 @@ def main(
         os.makedirs(output_dir, exist_ok=True)
         os.makedirs(f"{output_dir}/samples", exist_ok=True)
         os.makedirs(f"{output_dir}/inv_latents", exist_ok=True)
-        OmegaConf.save(config, os.path.join(output_dir, 'config.yaml'))
+        OmegaConf.save(config, os.path.join(output_dir, "config.yaml"))
 
     # Load scheduler, tokenizer and models.
-    noise_scheduler = DDPMScheduler.from_pretrained(pretrained_model_path, subfolder="scheduler")
-    tokenizer = CLIPTokenizer.from_pretrained(pretrained_model_path, subfolder="tokenizer")
-    text_encoder = CLIPTextModel.from_pretrained(pretrained_model_path, subfolder="text_encoder")
+    noise_scheduler = DDPMScheduler.from_pretrained(
+        pretrained_model_path, subfolder="scheduler"
+    )
+    tokenizer = CLIPTokenizer.from_pretrained(
+        pretrained_model_path, subfolder="tokenizer"
+    )
+    text_encoder = CLIPTextModel.from_pretrained(
+        pretrained_model_path, subfolder="text_encoder"
+    )
     vae = AutoencoderKL.from_pretrained(pretrained_model_path, subfolder="vae")
-    unet = UNet3DConditionModel.from_pretrained_2d(pretrained_model_path, subfolder="unet")
+    unet = UNet3DConditionModel.from_pretrained_2d(
+        pretrained_model_path, subfolder="unet"
+    )
 
     # Freeze vae and text_encoder
     vae.requires_grad_(False)
@@ -103,19 +112,27 @@ def main(
         if is_xformers_available():
             unet.enable_xformers_memory_efficient_attention()
         else:
-            raise ValueError("xformers is not available. Make sure it is installed correctly")
+            raise ValueError(
+                "xformers is not available. Make sure it is installed correctly"
+            )
 
     if gradient_checkpointing:
         unet.enable_gradient_checkpointing()
 
-
     # Get the validation pipeline
     validation_pipeline = FollowYourPosePipeline(
-        vae=vae, text_encoder=text_encoder, tokenizer=tokenizer, unet=unet,
-        scheduler=DDIMScheduler.from_pretrained(pretrained_model_path, subfolder="scheduler")
+        vae=vae,
+        text_encoder=text_encoder,
+        tokenizer=tokenizer,
+        unet=unet,
+        scheduler=DDIMScheduler.from_pretrained(
+            pretrained_model_path, subfolder="scheduler"
+        ),
     )
     validation_pipeline.enable_vae_slicing()
-    ddim_inv_scheduler = DDIMScheduler.from_pretrained(pretrained_model_path, subfolder='scheduler')
+    ddim_inv_scheduler = DDIMScheduler.from_pretrained(
+        pretrained_model_path, subfolder="scheduler"
+    )
     ddim_inv_scheduler.set_timesteps(validation_data.num_inv_steps)
 
     unet = accelerator.prepare(unet)
@@ -152,29 +169,30 @@ def main(
 
         global_step = int(load_path.split("-")[-1])
 
-                
     if accelerator.is_main_process:
-        samples = []
         generator = torch.Generator(device=accelerator.device)
         generator.manual_seed(seed)
 
         ddim_inv_latent = None
 
         from datetime import datetime
-   
+
         now = str(datetime.now())
         # print(now)
         for idx, prompt in enumerate(validation_data.prompts):
-            sample = validation_pipeline(prompt, generator=generator, latents=ddim_inv_latent,
-                                        skeleton_path=skeleton_path,
-                                        **validation_data).videos
-            save_videos_grid(sample, f"{output_dir}/inference/sample-{global_step}-{str(seed)}-{now}/{prompt}.gif")
-            samples.append(sample)
-        samples = torch.concat(samples)
-        save_path = f"{output_dir}/inference/sample-{global_step}-{str(seed)}-{now}.gif"
-        save_videos_grid(samples, save_path)
-        logger.info(f"Saved samples to {save_path}")
-
+            sample = validation_pipeline(
+                prompt,
+                negative_prompt=validation_data.negative_prompt,
+                generator=generator,
+                latents=ddim_inv_latent,
+                skeleton_path=skeleton_path,
+                **validation_data,
+            ).videos
+            save_videos_grid(
+                sample,
+                f"{output_dir}/inference/sample-{global_step}-{str(seed)}-{now}/{prompt}.mp4",
+                fps=30,
+            )
 
 
 if __name__ == "__main__":
@@ -182,4 +200,4 @@ if __name__ == "__main__":
     parser.add_argument("--config", type=str)
     parser.add_argument("--skeleton_path", type=str)
     args = parser.parse_args()
-    main(**OmegaConf.load(args.config), skeleton_path = args.skeleton_path)
+    main(**OmegaConf.load(args.config), skeleton_path=args.skeleton_path)
