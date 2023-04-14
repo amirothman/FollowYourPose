@@ -4,14 +4,12 @@ output_dir: "output"
 
 validation_data:
   prompts:
-    - "Iron man on the beach"
-    - "Stormtrooper on the sea"
-    - "Astronaut on the beach"
-  negative_prompt: ""
-  video_length: 32
-  width: 512
-  height: 512
-  num_inference_steps: 50
+    - "gorgeous young women fighting in a brawl, in the style of Martine Johanna, draped in flowing fabric, ((((colorful)))) (((bright))) energetic brush strokes, realistic, sharp focus, 8k high definition, insanely detailed, intricate, elegant, art by Martine Johanna and artgerm, symmetrical"
+  negative_prompt: "lowres, bad anatomy, bad hands, text, error, missing fingers, bad fingers, extra fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, bad face, bad eyes"
+  video_length: 511
+  width: 480
+  height: 270
+  num_inference_steps: 28
   guidance_scale: 12.5
   use_inv_latent: False
   num_inv_steps: 50
