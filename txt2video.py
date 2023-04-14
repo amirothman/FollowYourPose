@@ -182,7 +182,7 @@ def main(
         for idx, prompt in enumerate(validation_data.prompts):
             sample = validation_pipeline(
                 prompt,
-                negative_prompt=validation_data.negative_prompt,
+                # negative_prompt=validation_data.negative_prompt,
                 generator=generator,
                 latents=ddim_inv_latent,
                 skeleton_path=skeleton_path,
